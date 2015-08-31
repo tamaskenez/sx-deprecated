@@ -27,19 +27,19 @@ namespace sx {
         bool can_clamp;
     };
 
-    smart_index from_end(ssize_t idx) {
+    inline smart_index from_end(ssize_t idx) {
         return smart_index(idx, true);
     }
 
-    smart_index from_end_clamped(ssize_t idx) {
+    inline smart_index from_end_clamped(ssize_t idx) {
         return smart_index(idx, true, true);
     }
 
-    smart_index from_start_clamped(ssize_t idx) {
+    inline smart_index from_start_clamped(ssize_t idx) {
         return smart_index(idx, false, true);
     }
 
-    smart_index operator+(smart_index x, ssize_t n) {
+    inline smart_index operator+(smart_index x, ssize_t n) {
         return smart_index(x.raw_idx + n, x.from_end, x.can_clamp);
     }
 

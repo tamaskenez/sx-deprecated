@@ -11,6 +11,8 @@
 #include "traits.h"
 #include "macros.h"
 #include "proxy_iota.h"
+#include "proxy_index_at.h"
+//#include "eager_ops.h"
 
 namespace sx {
 
@@ -35,6 +37,9 @@ namespace sx {
         array1() : data_(nullptr), size_(0), stride_(0) {
         }
 
+        array1(const this_type &x) : data_(x.data_), size_(x.size_), stride_(x.stride_) {
+        }
+
         array1(pointer data, ssize_t size, ssize_t stride = 1) : data_(data), size_(size), stride_(stride) {
         }
 
@@ -42,27 +47,31 @@ namespace sx {
                 : data_(data), size_((end - data) / stride), stride_(stride) {
         }
 
-        //intentionally not explicit
+        //construct from std::vector: intentionally non-explicit
         array1(typename std::conditional<Mutable, std::vector<value_type>, const std::vector<value_type>>::type &v)
                 : array1(v.data(), v.size()) {
         }
 
-        //intentionally not explicit
+        //construct from darray1 intentionally non-explicit
         array1(typename std::conditional<Mutable, darray1<value_type>, const darray1<value_type>>::type &v);
 
-        //intentionally not explicit
+        //construct from std::basic_string: intentionally non-explicit
         //compile-time error if Mutable
+        //using c_str() instead of data() meant to ensure contiguous storage
         array1(const std::basic_string<value_type> &bs) : array1(bs.c_str(), (ssize_t) bs.size()) {
         }
 
-        array1(const this_type &x) : data_(x.data_), size_(x.size_), stride_(x.stride_) {
+        //convert mutable array to const array
+        operator array1<T, false>() const {
+            return array1<T, false>(data(), size(), stride());
         }
 
-        array1(const this_type &&x) : data_(x.data_), size_(x.size_), stride_(x.stride_) {
-        }
-
+        //disable op= because it's ambigouos (shallow or deep copy)
         this_type &operator=(const this_type &) = delete;
 
+        //move assignment needed to include in containers
+        //note: adding a struct containing an array1 to a container could still be
+        //cumbersome since one should implement the struct's move ctor
         this_type &operator=(this_type &&x) {
             data_ = x.data_;
             size_ = x.size_;
@@ -80,20 +89,16 @@ namespace sx {
             return operator[](sidx.effective_idx_unchecked(size_));
         }
 
-        template<typename S, typename std::enable_if<std::is_integral<S>::value>::type * = nullptr>
-        std::vector<T> operator[](array1<S> idcs) const {
-            std::vector<T> result;
-            result.reserve(idcs.size());
-            for (auto &x : idcs) result.push_back((*this)[x]);
-            return result;
+        //enable if C2 indexable and C2::value_type is integral
+        template<typename C2, typename std::enable_if<
+                container_traits<C2>::indexable &&
+                        std::is_integral<typename C2::value_type>::value
+        >::type * = nullptr>
+        proxy_const_indexable_at_indexable<this_type, C2> operator[](const C2 &idcs) const {
+            return index_at(*this, idcs);
         }
 
-        template<typename S, typename std::enable_if<std::is_integral<S>::value>::type * = nullptr>
-        std::vector<T> operator[](const std::vector<S> &idcs) const {
-            return operator[](array1<S>(idcs));
-        }
-
-        pointer const data() const {
+        pointer data() const {
             return data_;
         }
 
@@ -116,10 +121,6 @@ namespace sx {
 
         this_type slicen(smart_index lower, ssize_t n) const {
             return slice(lower, lower + n);
-        }
-
-        operator array1<T, false>() const {
-            return array1<T, false>(data(), size(), stride());
         }
 
     private:
@@ -149,15 +150,18 @@ namespace sx {
         darray1() {
         }
 
-        darray1(const this_type& x):v_(x.v_) {
+        darray1(const this_type &x) : v_(x.v_) {
         }
-        darray1(this_type&& x) :v_(std::move(x.v_)) {
+
+        darray1(this_type &&x) : v_(std::move(x.v_)) {
         }
-        this_type& operator=(const this_type& x){
+
+        this_type &operator=(const this_type &x) {
             v_ = x.v_;
             return *this;
         }
-        this_type& operator=(this_type&& x){
+
+        this_type &operator=(this_type &&x) {
             v_ = std::move(x.v_);
             return *this;
         }
@@ -319,6 +323,24 @@ namespace sx {
     template<typename T>
     mutable_index_iterator<darray1<T>> end(darray1<T> &that) {
         return mutable_index_iterator<darray1<T>>(&that, that.size());
+    }
+
+    template<typename T>
+    array1<T> slice(array1<T> v, smart_index lower, smart_index upper) {
+        ssize_t l = lower.effective_idx_unchecked(v.size());
+        ssize_t u = upper.effective_idx_unchecked(v.size());
+        assert(0 <= l && l < v.size() && 0 <= u && u <= v.size() && l <= u);
+        if (l == u)
+            return array1<T>();
+        return array1<T>(v.data() + l * v.stride(), u - l, v.stride());
+    }
+
+    template<typename T, bool Mutable>
+    darray1<T> operator-(array1<T, Mutable> x1, const T& x2) {
+        darray1<T> result(x1.size());
+        for (auto i : iota(x1.size()))
+            result[i] = x1[i] - x2;
+        return result;
     }
 
 #if 0

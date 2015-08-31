@@ -91,7 +91,7 @@ namespace sx {
             return (*this)(row, col);
         }
 
-        pointer const data() const {
+        pointer data() const {
             return data_;
         }
 
@@ -177,18 +177,21 @@ namespace sx {
         darray2() : nr_(0), nc_(0) {
         }
 
-        darray2(const this_type& x) :v_(x.v_),nr_(x.nr_),nc_(x.nc_) {
+        darray2(const this_type &x) : v_(x.v_), nr_(x.nr_), nc_(x.nc_) {
         }
-        darray2(this_type&& x) :v_(std::move(x.v_)), nr_(x.nr_), nc_(x.nc_) {
+
+        darray2(this_type &&x) : v_(std::move(x.v_)), nr_(x.nr_), nc_(x.nc_) {
             x.nr_ = x.nc_ = 0;
         }
-        this_type& operator=(const this_type& x){
+
+        this_type &operator=(const this_type &x) {
             v_ = x.v_;
             nr_ = x.nr_;
             nc_ = x.nc_;
             return *this;
         }
-        this_type& operator=(this_type&& x){
+
+        this_type &operator=(this_type &&x) {
             v_ = std::move(x.v_);
             nr_ = x.nr_;
             nc_ = x.nc_;

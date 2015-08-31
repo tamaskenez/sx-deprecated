@@ -109,7 +109,7 @@ namespace sx {
 
         const_reference operator[](ptrdiff_t idx) const {
             assert(0 <= idx && idx < endidx);
-            return (T)idx;
+            return (T) idx;
         }
 
         ptrdiff_t size() const {

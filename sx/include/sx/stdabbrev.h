@@ -41,6 +41,11 @@ namespace sx {
         typedef std::pair<int, int> pair_ii;
         typedef std::pair<int, double> pair_id;
         typedef std::pair<double, int> pair_di;
+
+        typedef std::tuple<double, double> tuple_dd;
+        typedef std::tuple<int, int> tuple_ii;
+        typedef std::tuple<int, double> tuple_id;
+        typedef std::tuple<double, int> tuple_di;
     }
 }
 

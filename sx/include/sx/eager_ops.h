@@ -4,21 +4,23 @@
 #include "array1.h"
 #include <stdexcept>
 #include <algorithm>
+#include <numeric>
 #include "macros.h"
 #include "sx/proxy_iota.h"
+#include "array1.h"
 
 namespace sx {
     // where
     template<typename E, typename std::enable_if<container_traits<E>::indexable>::type * = nullptr>
-    darray1<ptrdiff_t> where(const E &e) {
-        const ptrdiff_t N = e.size();
-        ptrdiff_t count = 0;
-        for (ptrdiff_t i = 0; i < N; ++i)
+    darray1<ssize_t> where(const E &e) {
+        const ssize_t N = e.size();
+        ssize_t count = 0;
+        for (ssize_t i = 0; i < N; ++i)
             if (e[i])
                 ++count;
-        darray1<ptrdiff_t> result;
+        darray1<ssize_t> result;
         result.reserve(count);
-        for (ptrdiff_t i = 0; i < N; ++i)
+        for (ssize_t i = 0; i < N; ++i)
             if (e[i])
                 result.push_back(i);
         return result;
@@ -74,10 +76,10 @@ namespace sx {
     // op==(list, atom)
     template<typename E1, typename T2, typename std::enable_if<container_traits<E1>::indexable && !container_traits<T2>::indexable>::type * = nullptr>
     darray1<bool> operator==(const E1 &e1, const T2 &t2) {
-        const ptrdiff_t N = e1.size();
+        const ssize_t N = e1.size();
 
         darray1<bool> result(N);
-        for (ptrdiff_t i = 0; i < N; ++i)
+        for (ssize_t i = 0; i < N; ++i)
             result[i] = e1[i] == t2;
 
         return result;
@@ -136,7 +138,7 @@ namespace sx {
 
     // function object for drop(n, list) with n bound
     struct drop_bound1st {
-        drop_bound1st(ptrdiff_t x) : x(x) {
+        drop_bound1st(ssize_t x) : x(x) {
         }
 
         template<typename E, typename std::enable_if<container_traits<E>::indexable>::type * = nullptr>
@@ -145,11 +147,11 @@ namespace sx {
         }
 
     private:
-        ptrdiff_t x;
+        ssize_t x;
     };
 
     // return function object drop(n, list) with n bound
-    drop_bound1st drop(ptrdiff_t x) {
+    drop_bound1st drop(ssize_t x) {
         return drop_bound1st(x);
     }
 
@@ -157,11 +159,11 @@ namespace sx {
     template<typename E1, typename E2, typename std::enable_if<container_traits<E1>::indexable && container_traits<E2>::indexable>::type * = nullptr>
     sx::darray1<sx::array1<typename E2::value_type>> cut(const E1 &idcs, const E2 &y) {
         darray1<array1<typename E2::value_type>> result;
-        const ptrdiff_t N = idcs.size();
+        const ssize_t N = idcs.size();
         result.reserve(N);
-        for (ptrdiff_t i = 0; i < N; ++i) {
-            const ptrdiff_t lo = idcs[i];
-            const ptrdiff_t hi = i + 1 == N ? y.size() : idcs[i + 1];
+        for (ssize_t i = 0; i < N; ++i) {
+            const ssize_t lo = idcs[i];
+            const ssize_t hi = i + 1 == N ? y.size() : idcs[i + 1];
             result.push_back(y.slice(lo, hi));
         }
         return result;
@@ -170,10 +172,10 @@ namespace sx {
     // each(Fx, list)
     template<typename UnaryPr, typename E, typename std::enable_if<container_traits<E>::indexable>::type * = nullptr>
     darray1<typename std::result_of<UnaryPr(typename E::const_reference)>::type> each(UnaryPr &&fun, const E &x) {
-        const ptrdiff_t N = x.size();
+        const ssize_t N = x.size();
         darray1<typename std::result_of<UnaryPr(typename E::const_reference)>::type> result;
         result.reserve(N);
-        for (ptrdiff_t i = 0; i < N; ++i)
+        for (ssize_t i = 0; i < N; ++i)
             result.push_back(fun(x[i]));
         return result;
     }
